@@ -5,7 +5,7 @@
   (:import [java.lang ProcessBuilder]
            [java.nio.file Files]
            [java.nio.file.attribute PosixFilePermission PosixFilePermissions]
-           [java.util EnumSet]))
+           [java.util Arrays EnumSet]))
 
 (def resource-zip-file-path "hello/hello.zip")
 (def binary-path-in-zip-file "temp/hello_args")
@@ -35,11 +35,13 @@
   (let [perms (PosixFilePermissions/fromString "rwxr-xr-x")]
     (Files/setPosixFilePermissions (.toPath file) perms)))
 
-(defn run-binary-via-pb [binary-path & args]
-  (let [pb (ProcessBuilder. (into [binary-path] args))]
+(defn execute-binary-via-pb [binary-path & args]
+  (println (into [binary-path] args))
+  (let [commands (into-array String (cons binary-path (remove nil? args)))
+        pb (ProcessBuilder. (Arrays/asList commands))]
     (.inheritIO pb)
     (let [process (.start pb)]
-      (.waitForProcess process)
+      (.waitFor process)
       (println "Done. [pb]"))))
 
 (defn execute-binary-via-sh [binary-path & args]
@@ -68,5 +70,5 @@
         _ (unzip resource-url temp-dir-as-file)
         binary-io-file (io/file temp-dir-as-file binary-path-in-zip-file)]
     (make-executable binary-io-file)
-    (execute-binary-via-sh temp-dir-binary-path args)))
+    (execute-binary-via-pb temp-dir-binary-path args)))
 ;;    (execute-binary binary-io-file)))
