@@ -36,7 +36,8 @@
     (Files/setPosixFilePermissions (.toPath file) perms)))
 
 (defn execute-binary-via-pb [binary-path & args]
-  (println (into [binary-path] args))
+  (println (str "Running '" binary-path "'. [pb]"))
+  ;; (println (into [binary-path] args))
   (let [commands (into-array String (cons binary-path (flatten (remove nil? args))))
         pb (ProcessBuilder. (Arrays/asList commands))]
     (.inheritIO pb)
@@ -45,8 +46,8 @@
       (println "Done. [pb]"))))
 
 (defn execute-binary-via-sh [binary-path & args]
-  (println (str "Running '" binary-path "'."))
-  (let [result (sh binary-path)]
+  (println (str "Running '" binary-path "'. [sh]"))
+  (let [result (apply sh binary-path (remove nil? (flatten args)))]
     (if result
       (println (:out result))
       (println (str "Running of '" binary-path "' failed.")))
@@ -70,5 +71,4 @@
         _ (unzip resource-url temp-dir-as-file)
         binary-io-file (io/file temp-dir-as-file binary-path-in-zip-file)]
     (make-executable binary-io-file)
-    (execute-binary-via-pb temp-dir-binary-path args)))
-;;    (execute-binary binary-io-file)))
+    (execute-binary-via-sh temp-dir-binary-path args)))
