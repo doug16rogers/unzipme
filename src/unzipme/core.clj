@@ -37,7 +37,7 @@
 
 (defn execute-binary-via-pb [binary-path & args]
   (println (into [binary-path] args))
-  (let [commands (into-array String (cons binary-path (remove nil? args)))
+  (let [commands (into-array String (cons binary-path (flatten (remove nil? args))))
         pb (ProcessBuilder. (Arrays/asList commands))]
     (.inheritIO pb)
     (let [process (.start pb)]
