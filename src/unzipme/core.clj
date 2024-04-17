@@ -71,4 +71,4 @@
         _ (unzip resource-url temp-dir-as-file)
         binary-io-file (io/file temp-dir-as-file binary-path-in-zip-file)]
     (make-executable binary-io-file)
-    (execute-binary-via-sh temp-dir-binary-path args)))
+    (execute-binary-via-pb temp-dir-binary-path args)))
