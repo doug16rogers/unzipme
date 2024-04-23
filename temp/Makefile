@@ -1,24 +1,37 @@
-CC = gcc
 CFLAGS = -Wall -Werror
-TARGETS = hello_args
+CC = gcc
+MINGW_CC = /usr/bin/x86_64-w64-mingw32-gcc-10-win32
 
-OS_BASE_DIR = ../resources/os
-OS_NAME := $(shell uname -s | tr '[[:upper:]]' '[[:lower:]]')_$(shell uname -m)
-OS_DIR = $(OS_BASE_DIR)/$(OS_NAME)
-OS_BIN = $(OS_DIR)/bin
-OS_BIN_TARGETS = $(addprefix $(OS_BIN)/,$(TARGETS))
+LINUX_X64 = linux-x86_64
+WINDOWS_X64 = windows-x86_64
+LINUX_X64_DIR = $(LINUX_X64)
+WINDOWS_X64_DIR = $(WINDOWS_X64)
+
+RESOURCES_DIR = ../resources/hello
+TARGETS = $(addprefix $(RESOURCES_DIR)/,hello-$(LINUX_X64).zip hello-$(WINDOWS_X64).zip)
 
 all: install
 
 .PHONY: install
-install: $(OS_BIN_TARGETS)
+install: $(TARGETS)
 
-$(OS_BIN)/%: %
+$(RESOURCES_DIR)/%: %
 	cp -f $< $@
 
-hello_args: hello_args.c
+hello-$(LINUX_X64).zip: $(LINUX_X64_DIR)/hello_args
+	zip $@ $^
+
+hello-$(WINDOWS_X64).zip: $(WINDOWS_X64_DIR)/hello_args.exe
+	zip $@ $^
+
+$(LINUX_X64_DIR)/hello_args: hello_args.c
+	@mkdir -p $(@D)
 	$(CC) -o $@ $(CFLAGS) $^
+
+$(WINDOWS_X64_DIR)/hello_args.exe: hello_args.c
+	@mkdir -p $(@D)
+	$(MINGW_CC) -o $@ $(CFLAGS) $^
 
 .PHONY: clean
 clean:
-	rm -f *.o $(TARGETS) $(OS_BIN_TARGETS)
+	rm -f *.o $(TARGETS) $(LINUX_X64_DIR) $(WINDOWS_X64_DIR)

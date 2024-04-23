@@ -1,14 +1,31 @@
 (ns unzipme.core
   (:gen-class)
   (:require [clojure.java.io :as io]
-            [clojure.java.shell :refer [sh]])
+            [clojure.java.shell :refer [sh]]
+            [clojure.string :as string])
   (:import [java.lang ProcessBuilder]
            [java.nio.file Files]
            [java.nio.file.attribute PosixFilePermission PosixFilePermissions]
            [java.util Arrays EnumSet]))
 
-(def resource-zip-file-path "hello/hello.zip")
-(def binary-path-in-zip-file "temp/hello_args")
+(defn os-name [] 
+  (let [name (string/lower-case (System/getProperty "os.name"))]
+        (if (string/starts-with? name "win") "windows" name)))
+
+(def is-win? (= (os-name) "windows"))
+
+(defn os-arch []
+  (let [os_arch (System/getProperty "os.arch")]
+    (cond
+      (= os_arch "amd64") "x86_64"
+      :else os_arch)))
+
+(defn resource-zip-file-path []
+  (str "hello/hello-" (os-name) "-" (os-arch) ".zip"))
+
+(defn binary-path-in-zip-file []
+  (str (os-name) "-" (os-arch) "/hello_args"
+       (if is-win? ".exe" "")))
 
 (defn copy-resource-to-file [rsrc-path output-file-path is_executable]
   (let
@@ -45,6 +62,7 @@
       (.waitFor process)
       (println "Done. [pb]"))))
 
+;; For some reason - presumably waiting on subprocess output? - this takes 60 seconds to finish.
 (defn execute-binary-via-sh [binary-path & args]
   (println (str "Running '" binary-path "'. [sh]"))
   (let [result (apply sh binary-path (remove nil? (flatten args)))]
@@ -61,14 +79,14 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println (str "Running '" binary-path-in-zip-file "' from resource '" resource-zip-file-path "'..."))
-  (let [resource-url (io/resource resource-zip-file-path)
+  (println (str "Running '" (binary-path-in-zip-file) "' from resource '" (resource-zip-file-path) "'..."))
+  (let [resource-url (io/resource (resource-zip-file-path))
         temp-dir (java.nio.file.Files/createTempDirectory "unzipme-" no-file-attributes)
         temp-dir-as-file (java.io.File. (.toUri temp-dir))
-        temp-dir-binary-path (str temp-dir "/" binary-path-in-zip-file)
+        temp-dir-binary-path (str temp-dir "/" (binary-path-in-zip-file))
         _ (println (str "temp-dir='" temp-dir "'"))
         ;; _ (copy-resource-to-file resource-zip-file-path (str temp-dir "/temp-hello.zip") false)
         _ (unzip resource-url temp-dir-as-file)
-        binary-io-file (io/file temp-dir-as-file binary-path-in-zip-file)]
-    (make-executable binary-io-file)
+        binary-io-file (io/file temp-dir-as-file (binary-path-in-zip-file))]
+    (if (not is-win?) (make-executable binary-io-file))
     (execute-binary-via-pb temp-dir-binary-path args)))
